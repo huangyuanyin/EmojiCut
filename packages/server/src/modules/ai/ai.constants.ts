@@ -5,12 +5,29 @@ export { STYLE_DESCRIPTIONS } from '@emojicut/shared';
 /**
  * 生成贴纸的提示词模板
  * @param styleDescription 风格描述
+ * @param count 生成数量 (1-16)
  */
-export const STICKER_GENERATION_PROMPT = (styleDescription: string) =>
-  `You are a cute cartoon character designer. Please design and generate a set of LINE-style emoji sticker pack for the character in the image.
+export const STICKER_GENERATION_PROMPT = (styleDescription: string, count: number = 1) => {
+  if (count === 1) {
+    return `You are a cute cartoon character designer. Please design and generate a single LINE-style emoji sticker for the character in the image.
 
 Requirements:
-1. Generate 16 different sticker expressions arranged in a 4x4 grid
+1. Generate exactly 1 sticker showing a cute expression or action
+2. Use 2-head chibi proportions with a creative pose
+3. Background must be pure white (#FFFFFF) for easy automatic cutting
+4. The sticker should be centered in the image with good padding around it
+5. Art style: ${styleDescription}
+
+Please generate the image directly without any text explanation.`;
+  }
+  
+  const rows = Math.ceil(count / 4);
+  const cols = Math.min(count, 4);
+  
+  return `You are a cute cartoon character designer. Please design and generate a set of LINE-style emoji sticker pack for the character in the image.
+
+Requirements:
+1. Generate ${count} different sticker expressions arranged in a ${rows}x${cols} grid
 2. Each sticker shows the same character with different expressions or actions
 3. Use 2-head chibi proportions with creative poses and text
 4. Background must be pure white (#FFFFFF) for easy automatic cutting
@@ -18,6 +35,7 @@ Requirements:
 6. Art style: ${styleDescription}
 
 Please generate the image directly without any text explanation.`;
+};
 
 /**
  * 生成贴纸名称的提示词

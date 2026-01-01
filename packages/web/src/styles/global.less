@@ -1,86 +1,31 @@
+@import './shojo.css';
+
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
-:root {
-  --color-primary: #ff69b4;
-  --color-secondary: #ffc0cb;
-  --color-accent: #ff1493;
-  --color-bg: #fff5f7;
-  --color-text: #333;
-  --color-text-light: #666;
-  --color-border: #ffe4e8;
-  --color-white: #ffffff;
-
-  --shadow-sm: 0 2px 4px rgba(255, 105, 180, 0.1);
-  --shadow-md: 0 4px 8px rgba(255, 105, 180, 0.15);
-  --shadow-lg: 0 8px 16px rgba(255, 105, 180, 0.2);
-
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
+html, body, #root {
+  height: 100%;
+  overflow: hidden;
 }
 
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  background: linear-gradient(135deg, #fff5f7 0%, #ffe4e8 100%);
-  min-height: 100vh;
-  color: var(--color-text);
+// 滚动条样式
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+::-webkit-scrollbar-track {
+  background: rgba(255, 192, 203, 0.1);
 }
 
-button {
-  cursor: pointer;
-  border: none;
-  outline: none;
-  font-family: inherit;
-  transition: all 0.3s ease;
-}
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, var(--shojo-pink), var(--shojo-pink-dark));
+  border-radius: 5px;
 
-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-input, textarea {
-  font-family: inherit;
-  outline: none;
-}
-
-.btn {
-  padding: 12px 24px;
-  border-radius: var(--radius-md);
-  font-size: 16px;
-  font-weight: 600;
-  box-shadow: var(--shadow-sm);
-
-  &:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
+  &:hover {
+    background: linear-gradient(135deg, var(--shojo-pink-dark), #ff007f);
   }
-
-  &:active:not(:disabled) {
-    transform: translateY(0);
-  }
-}
-
-.btn-primary {
-  background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
-  color: white;
-}
-
-.btn-secondary {
-  background: white;
-  color: var(--color-primary);
-  border: 2px solid var(--color-primary);
 }

@@ -157,12 +157,13 @@ export class AiService {
     style: StickerStyle,
     customStyle?: string,
     aspectRatio?: string,
+    count: number = 1,
   ): Promise<string> {
     try {
-      this.logger.log(`Generating sticker sheet with style: ${style}, aspectRatio: ${aspectRatio || 'default'}`);
+      this.logger.log(`Generating sticker sheet with style: ${style}, aspectRatio: ${aspectRatio || 'default'}, count: ${count}`);
 
       const styleDescription = this._getStyleDescription(style, customStyle);
-      const prompt = STICKER_GENERATION_PROMPT(styleDescription);
+      const prompt = STICKER_GENERATION_PROMPT(styleDescription, count);
 
       const base64Data = referenceImageBase64.replace(/^data:image\/\w+;base64,/, '');
 

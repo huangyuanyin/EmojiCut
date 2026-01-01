@@ -26,7 +26,8 @@ export class StickerService {
         request.referenceImage,
         request.style,
         request.customStyle,
-        request.aspectRatio, // 传递 aspectRatio 参数
+        request.aspectRatio,
+        request.count || 1,
       );
 
       return {

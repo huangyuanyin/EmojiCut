@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { AppMode, StickerSegment, ProcessingStatus } from '@emojicut/shared';
-import CutePrinter2D from './components/CutePrinter2D';
-import StickerStack from './components/StickerStack';
+import { Download, Loader2, RefreshCw, Sparkles, Heart } from 'lucide-react';
+import CutePrinter2D from './components/CutePrinter2D/index';
+import StickerStack from './components/StickerStack/index';
 import { processFile, runAiNaming, downloadAllStickers } from './services/stickerService';
-import './styles/App.less';
+import styles from './App.module.less';
 
 const App: React.FC = () => {
   const [appMode, setAppMode] = useState<AppMode>('generate');
@@ -13,8 +14,8 @@ const App: React.FC = () => {
     message: '等待开始...',
   });
   const [segments, setSegments] = useState<StickerSegment[]>([]);
+  const [isZipping, setIsZipping] = useState(false);
 
-  // 处理生成完成的回调
   const handleGenerateComplete = async (imageData: string) => {
     setAppMode('cut');
 
@@ -28,7 +29,6 @@ const App: React.FC = () => {
     }
   };
 
-  // 重新开始
   const handleReset = () => {
     setAppMode('generate');
     setStatus({
@@ -39,53 +39,76 @@ const App: React.FC = () => {
     setSegments([]);
   };
 
-  // 下载所有贴纸
   const handleDownloadAll = async () => {
+    setIsZipping(true);
     await downloadAllStickers(segments);
+    setIsZipping(false);
   };
 
   return (
-    <div className="app">
-      <header className="app-header">
-        <h1>🎨 EmojiCut AI</h1>
-        <p>AI驱动的贴纸生成和智能切割系统</p>
-      </header>
+    <div className="shojo-container">
+      {appMode === 'generate' && (
+        <CutePrinter2D onGenerateComplete={handleGenerateComplete} />
+      )}
 
-      <main className="app-main">
-        {appMode === 'generate' ? (
-          <CutePrinter2D onGenerateComplete={handleGenerateComplete} />
-        ) : (
-          <div className="cut-mode">
-            <div className="status-bar">
-              <div className="status-info">
-                <span className="status-stage">{status.message}</span>
-                <span className="status-progress">{status.progress}%</span>
-              </div>
-              <div className="progress-bar">
-                <div
-                  className="progress-fill"
-                  style={{ width: `${status.progress}%` }}
-                />
-              </div>
+      {appMode === 'cut' && (
+        <>
+          <div className="cute-machine cute-machine-static">
+            <div className={styles.header}>
+              <div className={styles.headerDot}></div>
+              <div className={styles.headerTitle}>✨ EmojiCut - AI贴纸生成 ✨</div>
+              <div className={styles.headerDot}></div>
             </div>
 
-            <StickerStack segments={segments} />
-
-            <div className="action-buttons">
-              <button onClick={handleDownloadAll} className="btn btn-primary">
-                📦 下载全部 ({segments.length})
-              </button>
-              <button onClick={handleReset} className="btn btn-secondary">
-                🔄 重新开始
-              </button>
+            <div className={styles.screenArea}>
+              {status.stage !== 'idle' && status.stage !== 'complete' ? (
+                <div className={styles.processingState}>
+                  <Loader2 size={32} className={styles.spinIcon} />
+                  <div className={styles.processingText}>{status.message}</div>
+                  <div className={styles.progressBar}>
+                    <div 
+                      className={styles.progressFill} 
+                      style={{ width: `${status.progress}%` }}
+                    ></div>
+                  </div>
+                </div>
+              ) : (
+                <div className={styles.completeState}>
+                  <div className={styles.successIcon}>
+                    <Heart size={40} fill="currentColor" />
+                  </div>
+                  <div className={styles.completeTitle}>✨ 完成啦 ✨</div>
+                  <div className={styles.stickerCount}>
+                    <Sparkles size={16} />
+                    <span>共 {segments.length} 个贴纸</span>
+                  </div>
+                  
+                  <div className={styles.actionButtons}>
+                    <button onClick={handleReset} className={styles.resetBtn}>
+                      <RefreshCw size={16} />
+                      <span>再来一次</span>
+                    </button>
+                    <button 
+                      onClick={handleDownloadAll} 
+                      className={styles.downloadBtn}
+                      disabled={isZipping}
+                    >
+                      {isZipping ? <Loader2 size={16} className={styles.spinIcon} /> : <Download size={16} />}
+                      <span>全部保存</span>
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
+
+            <div className="output-slot-2d"></div>
           </div>
-        )}
-      </main>
 
-      <footer className="app-footer">
-        <p>Made with ❤️ using React, Rsbuild & Gemini AI</p>
-      </footer>
+          <div className="sticker-output-area">
+            <StickerStack stickers={segments} visible={segments.length > 0} />
+          </div>
+        </>
+      )}
     </div>
   );
 };

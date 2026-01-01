@@ -20,12 +20,9 @@ export const loadImage = (dataUrl: string): Promise<HTMLImageElement> => {
  * 判断是否为背景像素
  */
 const isBackground = (r: number, g: number, b: number, a: number): boolean => {
-  return (
-    a < IMAGE_PROCESSING.BACKGROUND.ALPHA_THRESHOLD ||
-    (r > IMAGE_PROCESSING.BACKGROUND.RGB_THRESHOLD &&
-      g > IMAGE_PROCESSING.BACKGROUND.RGB_THRESHOLD &&
-      b > IMAGE_PROCESSING.BACKGROUND.RGB_THRESHOLD)
-  );
+  if (a < 20) return true; // 透明
+  // 高亮度被认为是背景（白色纸张）
+  return r > 240 && g > 240 && b > 240;
 };
 
 /**
@@ -155,17 +152,15 @@ export const processStickerSheet = async (
 
   // 提取每个贴纸
   const segments: StickerSegment[] = mergedRegions.map((region, index) => {
-    const dataUrl = extractStickerFromRect(
-      img,
-      region.minX,
-      region.minY,
-      region.maxX - region.minX + 1,
-      region.maxY - region.minY + 1,
+    const result = extractStickerFromRect(
+      canvas,
+      region,
+      `sticker_${index + 1}`,
     );
 
-    return {
+    return result || {
       id: `sticker-${Date.now()}-${index}`,
-      dataUrl,
+      dataUrl: '',
       originalX: region.minX,
       originalY: region.minY,
       width: region.maxX - region.minX + 1,
@@ -173,7 +168,7 @@ export const processStickerSheet = async (
       name: `sticker_${index + 1}`,
       isNaming: false,
     };
-  });
+  }).filter(s => s.dataUrl);
 
   onProgress?.({
     stage: 'complete',
@@ -237,57 +232,101 @@ const shouldMerge = (
   const dy = Math.max(0, Math.max(r1.minY, r2.minY) - Math.min(r1.maxY, r2.maxY));
   const distance = Math.sqrt(dx * dx + dy * dy);
 
-  return distance < IMAGE_PROCESSING.MERGE.DISTANCE;
+  return distance < 15; // 距离阈值
 };
 
 /**
- * 从矩形区域提取贴纸
+ * 从矩形区域提取贴纸，去除背景并添加白色描边
  */
 const extractStickerFromRect = (
-  img: HTMLImageElement,
-  x: number,
-  y: number,
-  width: number,
-  height: number,
-): string => {
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
+  source: HTMLCanvasElement,
+  rect: { minX: number; minY: number; maxX: number; maxY: number },
+  defaultName: string = 'sticker',
+): StickerSegment | null => {
+  const padding = 2;
+  const strokeWidth = 6; // 白色描边宽度
 
-  canvas.width = width;
-  canvas.height = height;
+  const width = source.width;
+  const height = source.height;
 
-  // 绘制原图的裁剪区域
-  ctx.drawImage(img, x, y, width, height, 0, 0, width, height);
+  // 1. 计算裁剪尺寸
+  const finalX = Math.max(0, rect.minX - padding);
+  const finalY = Math.max(0, rect.minY - padding);
+  const finalW = Math.min(width - finalX, (rect.maxX - rect.minX) + padding * 2);
+  const finalH = Math.min(height - finalY, (rect.maxY - rect.minY) + padding * 2);
 
-  // 添加白色描边
-  const imageData = ctx.getImageData(0, 0, width, height);
+  if (finalW <= 0 || finalH <= 0) return null;
 
-  const strokeCanvas = document.createElement('canvas');
-  const strokeCtx = strokeCanvas.getContext('2d')!;
-  strokeCanvas.width = width;
-  strokeCanvas.height = height;
+  // 2. 创建裁剪画布并去除背景
+  const segCanvas = document.createElement('canvas');
+  segCanvas.width = finalW;
+  segCanvas.height = finalH;
+  const segCtx = segCanvas.getContext('2d');
+  if (!segCtx) return null;
 
-  strokeCtx.putImageData(imageData, 0, 0);
+  segCtx.drawImage(
+    source,
+    finalX, finalY, finalW, finalH,
+    0, 0, finalW, finalH
+  );
 
-  // 绘制描边
-  for (let angle = 0; angle < IMAGE_PROCESSING.STROKE.STEPS; angle++) {
-    const rad = (angle / IMAGE_PROCESSING.STROKE.STEPS) * Math.PI * 2;
-    const offsetX =
-      Math.cos(rad) * IMAGE_PROCESSING.STROKE.WIDTH;
-    const offsetY =
-      Math.sin(rad) * IMAGE_PROCESSING.STROKE.WIDTH;
+  // 去除白色背景，使其透明
+  const segImageData = segCtx.getImageData(0, 0, finalW, finalH);
+  const segPixels = segImageData.data;
+  for (let i = 0; i < segPixels.length; i += 4) {
+    if (isBackground(segPixels[i], segPixels[i+1], segPixels[i+2], segPixels[i+3])) {
+      segPixels[i+3] = 0; // 设为透明
+    }
+  }
+  segCtx.putImageData(segImageData, 0, 0);
 
-    ctx.globalCompositeOperation = 'destination-over';
-    ctx.drawImage(strokeCanvas, offsetX, offsetY);
+  // 3. 创建白色剪影用于描边
+  const silhouetteCanvas = document.createElement('canvas');
+  silhouetteCanvas.width = finalW;
+  silhouetteCanvas.height = finalH;
+  const sCtx = silhouetteCanvas.getContext('2d');
+  if (!sCtx) return null;
+
+  sCtx.drawImage(segCanvas, 0, 0);
+  sCtx.globalCompositeOperation = 'source-in';
+  sCtx.fillStyle = '#FFFFFF';
+  sCtx.fillRect(0, 0, finalW, finalH);
+
+  // 4. 创建最终画布，留出描边空间
+  const finalCanvas = document.createElement('canvas');
+  finalCanvas.width = finalW + (strokeWidth * 2);
+  finalCanvas.height = finalH + (strokeWidth * 2);
+  const fCtx = finalCanvas.getContext('2d');
+  if (!fCtx) return null;
+
+  // 启用平滑处理
+  fCtx.imageSmoothingEnabled = true;
+  fCtx.imageSmoothingQuality = 'high';
+
+  // 5. 绘制白色描边 - 在多个角度绘制白色剪影
+  const steps = 24;
+  for (let i = 0; i < steps; i++) {
+    const angle = (i / steps) * 2 * Math.PI;
+    const ox = strokeWidth + Math.cos(angle) * strokeWidth;
+    const oy = strokeWidth + Math.sin(angle) * strokeWidth;
+    fCtx.drawImage(silhouetteCanvas, ox, oy);
   }
 
-  ctx.globalCompositeOperation = 'source-over';
-  ctx.fillStyle = IMAGE_PROCESSING.STROKE.COLOR;
-  ctx.globalCompositeOperation = 'destination-over';
-  ctx.fillRect(0, 0, width, height);
+  // 填充描边中心，确保没有间隙
+  fCtx.drawImage(silhouetteCanvas, strokeWidth, strokeWidth);
 
-  ctx.globalCompositeOperation = 'destination-atop';
-  ctx.drawImage(strokeCanvas, 0, 0);
+  // 6. 在描边上绘制原始彩色图像
+  fCtx.globalCompositeOperation = 'source-over';
+  fCtx.drawImage(segCanvas, strokeWidth, strokeWidth);
 
-  return canvas.toDataURL('image/png');
+  return {
+    id: crypto.randomUUID(),
+    dataUrl: finalCanvas.toDataURL('image/png'),
+    originalX: finalX,
+    originalY: finalY,
+    width: finalCanvas.width,
+    height: finalCanvas.height,
+    name: defaultName,
+    isNaming: false
+  };
 };

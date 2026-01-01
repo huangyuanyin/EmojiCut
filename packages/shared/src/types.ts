@@ -62,6 +62,7 @@ export interface GenerateStickerRequest {
   style: StickerStyle;
   customStyle?: string;
   aspectRatio?: AspectRatio; // 图片纵横比
+  count?: number; // 生成数量 (1-16)
 }
 
 /**
