@@ -6,6 +6,16 @@ import {
 } from '@emojicut/shared';
 
 /**
+ * 生成唯一 ID
+ */
+const generateId = (): string => {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return `${Date.now()}-${Math.random().toString(36).substring(2, 11)}-${Math.random().toString(36).substring(2, 11)}`;
+};
+
+/**
  * 连体贴纸检测结果
  */
 export interface MergedStickerInfo {
@@ -335,7 +345,7 @@ export const extractStickerFromRect = (
   fCtx.drawImage(segCanvas, strokeWidth, strokeWidth);
 
   return {
-    id: crypto.randomUUID(),
+    id: generateId(),
     dataUrl: finalCanvas.toDataURL('image/png'),      // 带描边版本（用于显示）
     rawDataUrl: segCanvas.toDataURL('image/png'),     // 不带描边版本（用于下载）
     originalX: finalX,
@@ -576,7 +586,7 @@ export const splitMergedSticker = async (
     
     if (trimmedSegment) {
       segments.push({
-        id: crypto.randomUUID(),
+        id: generateId(),
         dataUrl: trimmedSegment.dataUrl,
         rawDataUrl: trimmedSegment.dataUrl,  // 分割后的贴纸两个版本相同
         originalX: sticker.originalX + (direction === 'vertical' ? start : 0),

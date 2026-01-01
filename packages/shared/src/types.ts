@@ -131,3 +131,60 @@ export interface ErrorResponse {
   error: string;
   message?: string;
 }
+
+/**
+ * 图片上传请求（用于生成分享二维码）
+ */
+export interface UploadImageRequest {
+  imageData: string;
+  filename?: string;
+}
+
+/**
+ * 图片上传响应
+ */
+export interface UploadImageResponse {
+  success: boolean;
+  data?: {
+    id: string;      // 图片唯一标识
+    url: string;     // 访问URL
+    expiresAt: number; // 过期时间戳
+  };
+  error?: string;
+}
+
+/**
+ * 获取图片响应
+ */
+export interface GetImageResponse {
+  success: boolean;
+  data?: {
+    imageData: string;
+    filename: string;
+  };
+  error?: string;
+}
+
+/**
+ * 批量上传图片请求
+ */
+export interface UploadImagesRequest {
+  images: Array<{
+    imageData: string;
+    filename: string;
+  }>;
+}
+
+/**
+ * 批量上传图片响应
+ */
+export interface UploadImagesResponse {
+  success: boolean;
+  data?: {
+    id: string;
+    url: string;
+    count: number;
+    expiresAt: number;
+  };
+  error?: string;
+}

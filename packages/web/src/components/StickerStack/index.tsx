@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { StickerSegment } from '@emojicut/shared';
-import { Download } from 'lucide-react';
+import { Download, QrCode } from 'lucide-react';
+import QRCodeModal from '../QRCodeModal';
 import styles from './index.module.less';
 
 interface StickerStackProps {
@@ -9,25 +10,43 @@ interface StickerStackProps {
 }
 
 const StickerStack: React.FC<StickerStackProps> = ({ stickers, visible }) => {
+  const [qrCodeSticker, setQrCodeSticker] = useState<StickerSegment | null>(null);
+
   if (!visible || stickers.length === 0) return null;
 
   return (
-    <div className={styles.container}>
-      <div className={styles.stackArea}>
-        {stickers.map((sticker, index) => (
-          <DraggableSticker key={sticker.id} sticker={sticker} index={index} />
-        ))}
+    <>
+      <div className={styles.container}>
+        <div className={styles.stackArea}>
+          {stickers.map((sticker, index) => (
+            <DraggableSticker 
+              key={sticker.id} 
+              sticker={sticker} 
+              index={index}
+              onShowQRCode={setQrCodeSticker}
+            />
+          ))}
+        </div>
       </div>
-    </div>
+      
+      {/* 二维码弹窗 */}
+      {qrCodeSticker && (
+        <QRCodeModal
+          sticker={qrCodeSticker}
+          onClose={() => setQrCodeSticker(null)}
+        />
+      )}
+    </>
   );
 };
 
 interface DraggableProps {
   sticker: StickerSegment;
   index: number;
+  onShowQRCode: (sticker: StickerSegment) => void;
 }
 
-const DraggableSticker: React.FC<DraggableProps> = ({ sticker, index }) => {
+const DraggableSticker: React.FC<DraggableProps> = ({ sticker, index, onShowQRCode }) => {
   const initialRotation = useRef(Math.random() * 30 - 15);
   const initialX = useRef(Math.random() * 40 - 20);
   const initialY = useRef(Math.random() * 40 - 20 + index * 2);
@@ -86,11 +105,16 @@ const DraggableSticker: React.FC<DraggableProps> = ({ sticker, index }) => {
   const handleDownload = (e: React.MouseEvent) => {
     e.stopPropagation();
     const link = document.createElement('a');
-    link.href = sticker.dataUrl;
+    link.href = sticker.rawDataUrl;
     link.download = `${sticker.name}.png`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  const handleShowQRCode = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onShowQRCode(sticker);
   };
 
   return (
@@ -111,8 +135,13 @@ const DraggableSticker: React.FC<DraggableProps> = ({ sticker, index }) => {
         <img src={sticker.dataUrl} alt={sticker.name} className={styles.stickerImage} />
         <div className={`${styles.tooltip} ${isHovered || isDragging ? styles.visible : ''}`}>
           {sticker.name}
-          <div onClick={handleDownload} className={styles.downloadBtn}>
-            <Download size={10} />
+          <div className={styles.actionBtns} onMouseDown={e => e.stopPropagation()}>
+            <div onClick={handleDownload} className={styles.actionBtn} title="下载">
+              <Download size={10} />
+            </div>
+            <div onClick={handleShowQRCode} className={`${styles.actionBtn} ${styles.qrBtn}`} title="扫码分享">
+              <QrCode size={10} />
+            </div>
           </div>
         </div>
       </div>

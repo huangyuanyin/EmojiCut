@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { AppMode, StickerSegment, ProcessingStatus, Rect } from '@emojicut/shared';
-import { Download, Loader2, Sparkles, Heart, PlusCircle, ArrowLeft, Scissors, Wand2 } from 'lucide-react';
+import { Download, Loader2, Sparkles, Heart, PlusCircle, ArrowLeft, Scissors, Wand2, Share2 } from 'lucide-react';
 import CutePrinter2D from './components/CutePrinter2D';
 import StickerStack from './components/StickerStack';
 import ManualCropModal from './components/ManualCropModal';
+import QRCodeModal from './components/QRCodeModal';
 import CuteButton from './components/CuteButton';
 import { 
   processFile, 
@@ -27,6 +28,7 @@ const App: React.FC = () => {
   const [originalImage, setOriginalImage] = useState<string | null>(null);
   const [originalImageEl, setOriginalImageEl] = useState<HTMLImageElement | null>(null);
   const [isManualCropping, setIsManualCropping] = useState(false);
+  const [isShareAllOpen, setIsShareAllOpen] = useState(false);
   const [hasMerged, setHasMerged] = useState(false);
   const [isSplitting, setIsSplitting] = useState(false);
 
@@ -157,6 +159,13 @@ const App: React.FC = () => {
               >
                 保存全部
               </CuteButton>
+              <CuteButton
+                onClick={() => setIsShareAllOpen(true)}
+                icon={Share2}
+                color="pink"
+              >
+                分享好友
+              </CuteButton>
               {hasMerged && (
                 <CuteButton
                   onClick={handleSmartSplit}
@@ -267,6 +276,11 @@ const App: React.FC = () => {
               onClose={() => setIsManualCropping(false)}
               onConfirm={handleManualCrop}
             />
+          )}
+
+          {/* 分享好友二维码弹窗 */}
+          {isShareAllOpen && segments.length > 0 && (
+            <QRCodeModal stickers={segments} onClose={() => setIsShareAllOpen(false)} />
           )}
         </>
       )}

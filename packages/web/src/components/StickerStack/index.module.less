@@ -48,7 +48,7 @@
 
 .tooltip {
   position: absolute;
-  top: -32px;
+  top: -25px;
   left: 50%;
   transform: translateX(-50%);
   background: rgba(0, 0, 0, 0.75);
@@ -65,18 +65,59 @@
   }
 }
 
-.downloadBtn {
+.actionBtns {
   position: absolute;
   right: -8px;
   top: -8px;
+  display: flex;
+  gap: 2px;
+}
+
+.actionBtn {
   background: #3b82f6;
   border-radius: 50%;
   padding: 4px;
   cursor: pointer;
   pointer-events: auto;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 
   &:hover {
     background: #2563eb;
+    transform: scale(1.1);
+  }
+}
+
+.shareBtn {
+  background: #10b981;
+
+  &:hover {
+    background: #059669;
+  }
+
+  &.loading {
+    opacity: 0.6;
+    cursor: wait;
+    animation: pulse 1s infinite;
+  }
+}
+
+.qrBtn {
+  background: #8b5cf6;
+
+  &:hover {
+    background: #7c3aed;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
   }
 }
 

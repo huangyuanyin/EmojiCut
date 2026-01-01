@@ -14,7 +14,7 @@ gemini:
   baseUrl: ''
 
 # HTTP 代理配置（选填）
-# 如果你需要通过代理访问 Gemini API
+# 如果你需要通过代理访问 Gemini API（使用自定义 baseUrl 时不需要代理）
 proxy:
   # HTTP 代理地址
   http: 'http://127.0.0.1:7890'

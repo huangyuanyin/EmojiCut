@@ -49,6 +49,9 @@ export const getStyleCategory = (style: StickerStyle): StyleCategory => {
 export const API_ENDPOINTS = {
   GENERATE_STICKER: '/api/sticker/generate',
   GENERATE_NAME: '/api/sticker/name',
+  UPLOAD_IMAGE: '/api/sticker/upload',
+  UPLOAD_IMAGES: '/api/sticker/upload-all',
+  GET_IMAGE: '/api/sticker/image',
 } as const;
 
 /**
@@ -88,4 +91,10 @@ export const FILE_CONFIG = {
   MAX_FILE_SIZE: 10 * 1024 * 1024, // 10MB
   ALLOWED_TYPES: ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'] as const,
   ZIP_FILENAME: 'stickers.zip',
+} as const;
+
+/** 图片分享配置 */
+export const SHARE_CONFIG = {
+  EXPIRE_TIME: 60 * 60 * 1000, // 1小时
+  MAX_IMAGES: 500,
 } as const;
