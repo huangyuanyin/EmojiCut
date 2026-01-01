@@ -168,7 +168,8 @@ export const downloadAllStickers = async (
   const zip = new JSZip();
 
   segments.forEach((segment) => {
-    const base64Data = segment.dataUrl.split(',')[1];
+    // 使用（不带描边）用于下载
+    const base64Data = segment.rawDataUrl.split(',')[1];
     zip.file(`${segment.name}.png`, base64Data, { base64: true });
   });
 

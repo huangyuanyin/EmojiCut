@@ -37,7 +37,8 @@ export interface ProcessingStatus {
  */
 export interface StickerSegment {
   id: string;
-  dataUrl: string;
+  dataUrl: string;        // 带描边的版本（用于显示）
+  rawDataUrl: string;     // 不带描边的版本（用于下载）
   originalX: number;
   originalY: number;
   width: number;

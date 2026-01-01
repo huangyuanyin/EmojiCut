@@ -174,6 +174,7 @@ export const processStickerSheet = async (
     return result || {
       id: `sticker-${Date.now()}-${index}`,
       dataUrl: '',
+      rawDataUrl: '',
       originalX: region.minX,
       originalY: region.minY,
       width: region.maxX - region.minX + 1,
@@ -313,7 +314,7 @@ export const extractStickerFromRect = (
   const fCtx = finalCanvas.getContext('2d');
   if (!fCtx) return null;
 
-  // 启用平滑处理
+  // 启用平滑让描边更自然
   fCtx.imageSmoothingEnabled = true;
   fCtx.imageSmoothingQuality = 'high';
 
@@ -335,7 +336,8 @@ export const extractStickerFromRect = (
 
   return {
     id: crypto.randomUUID(),
-    dataUrl: finalCanvas.toDataURL('image/png'),
+    dataUrl: finalCanvas.toDataURL('image/png'),      // 带描边版本（用于显示）
+    rawDataUrl: segCanvas.toDataURL('image/png'),     // 不带描边版本（用于下载）
     originalX: finalX,
     originalY: finalY,
     width: finalCanvas.width,
@@ -576,6 +578,7 @@ export const splitMergedSticker = async (
       segments.push({
         id: crypto.randomUUID(),
         dataUrl: trimmedSegment.dataUrl,
+        rawDataUrl: trimmedSegment.dataUrl,  // 分割后的贴纸两个版本相同
         originalX: sticker.originalX + (direction === 'vertical' ? start : 0),
         originalY: sticker.originalY + (direction === 'horizontal' ? start : 0),
         width: trimmedSegment.width,
