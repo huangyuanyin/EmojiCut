@@ -8,6 +8,7 @@ export const BUTTON_COLORS = {
   blue: { borderColor: '#64B5F6', color: '#1565C0', background: '#E3F2FD' },
   purple: { borderColor: '#CE93D8', color: '#7B1FA2', background: '#F3E5F5' },
   pink: { borderColor: '#F48FB1', color: '#C2185B', background: '#FCE4EC' },
+  orange: { borderColor: '#FFB74D', color: '#E65100', background: '#FFF3E0' },
 } as const;
 
 export type ButtonColorScheme = keyof typeof BUTTON_COLORS;

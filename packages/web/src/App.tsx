@@ -1,11 +1,17 @@
 import React, { useState } from 'react';
 import { AppMode, StickerSegment, ProcessingStatus, Rect } from '@emojicut/shared';
-import { Download, Loader2, Sparkles, Heart, PlusCircle, ArrowLeft } from 'lucide-react';
+import { Download, Loader2, Sparkles, Heart, PlusCircle, ArrowLeft, Scissors, Wand2 } from 'lucide-react';
 import CutePrinter2D from './components/CutePrinter2D';
 import StickerStack from './components/StickerStack';
 import ManualCropModal from './components/ManualCropModal';
 import CuteButton from './components/CuteButton';
-import { processFile, runAiNaming, downloadAllStickers } from './services/stickerService';
+import { 
+  processFile, 
+  runAiNaming, 
+  downloadAllStickers,
+  hasMergedStickers,
+  smartSplitAllMerged,
+} from './services/stickerService';
 import { loadImage, extractStickerFromRect } from './services/imageProcessor';
 import styles from './App.module.less';
 
@@ -21,6 +27,8 @@ const App: React.FC = () => {
   const [originalImage, setOriginalImage] = useState<string | null>(null);
   const [originalImageEl, setOriginalImageEl] = useState<HTMLImageElement | null>(null);
   const [isManualCropping, setIsManualCropping] = useState(false);
+  const [hasMerged, setHasMerged] = useState(false);
+  const [isSplitting, setIsSplitting] = useState(false);
 
   const handleGenerateComplete = async (imageData: string) => {
     setAppMode('cut');
@@ -34,9 +42,63 @@ const App: React.FC = () => {
     const result = await processFile(imageData, setStatus);
     if (result.success && result.segments) {
       setSegments(result.segments);
+      
+      // 检测是否有连体贴纸
+      const merged = hasMergedStickers(result.segments);
+      setHasMerged(merged);
 
       // 自动开始AI命名
       await runAiNaming(result.segments, setSegments, setStatus);
+    }
+  };
+
+  const handleSmartSplit = async () => {
+    if (segments.length === 0) return;
+    
+    setIsSplitting(true);
+    setStatus({
+      stage: 'segmenting',
+      progress: 0,
+      message: '智能分割中...',
+    });
+
+    try {
+      const splitStickers = await smartSplitAllMerged(
+        segments,
+        (progress, message) => {
+          setStatus({
+            stage: 'segmenting',
+            progress,
+            message,
+          });
+        }
+      );
+      
+      setSegments(splitStickers);
+      setHasMerged(hasMergedStickers(splitStickers));
+      
+      // 为新分割的贴纸进行AI命名
+      const newStickers = splitStickers.filter(
+        s => !segments.some(old => old.id === s.id)
+      );
+      if (newStickers.length > 0) {
+        await runAiNaming(newStickers, setSegments, setStatus);
+      } else {
+        setStatus({
+          stage: 'complete',
+          progress: 100,
+          message: '分割完成！',
+        });
+      }
+    } catch (error) {
+      console.error('Smart split failed:', error);
+      setStatus({
+        stage: 'complete',
+        progress: 100,
+        message: '分割失败，请重试',
+      });
+    } finally {
+      setIsSplitting(false);
     }
   };
 
@@ -67,6 +129,8 @@ const App: React.FC = () => {
     setSegments([]);
     setOriginalImage(null);
     setOriginalImageEl(null);
+    setHasMerged(false);
+    setIsSplitting(false);
   };
 
   const handleDownloadAll = async () => {
@@ -93,6 +157,16 @@ const App: React.FC = () => {
               >
                 保存全部
               </CuteButton>
+              {hasMerged && (
+                <CuteButton
+                  onClick={handleSmartSplit}
+                  icon={Scissors}
+                  color="orange"
+                  loading={isSplitting}
+                >
+                  智能分割
+                </CuteButton>
+              )}
               <CuteButton
                 onClick={() => setIsManualCropping(true)}
                 icon={PlusCircle}
@@ -141,7 +215,23 @@ const App: React.FC = () => {
                     <Sparkles size={16} />
                     <span>共 {segments.length} 个贴纸</span>
                   </div>
+                  {hasMerged && (
+                    <div className={styles.mergedAlert}>
+                      <Wand2 size={14} />
+                      <span>检测到有贴纸可能连在一起</span>
+                    </div>
+                  )}
                   <div className={styles.completeActions}>
+                    {hasMerged && (
+                      <CuteButton
+                        onClick={handleSmartSplit}
+                        icon={Scissors}
+                        color="orange"
+                        loading={isSplitting}
+                      >
+                        一键分割
+                      </CuteButton>
+                    )}
                     <CuteButton
                       onClick={handleDownloadAll}
                       icon={Download}

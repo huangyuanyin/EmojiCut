@@ -8,10 +8,16 @@ export { STYLE_CONFIG, getStyleCategory } from '@emojicut/shared';
  */
 const CAPTION_PROMPT_SEGMENT = {
   single: `
-TEXT: Add a short Chinese meme caption (2-10 characters) matching the expression. Use bold, readable font placed near the character.`,
+TEXT: Add a short Chinese meme caption (2-10 characters). Choose text style (shape, color, size, position) that naturally fits the character's pose and emotion.`,
 
   multi: `
-TEXT: Add unique short Chinese meme captions (2-10 characters each) to EVERY sticker, matching each expression. Bold, readable font.`,
+TEXT: Add unique short Chinese meme captions (2-10 characters each) to EVERY sticker.
+IMPORTANT - Create VISUAL VARIETY across all stickers by naturally varying:
+- Position: adapt to each pose (where face looks, where empty space is)
+- Size: bigger for short/loud captions, smaller for longer/quiet ones
+- Shape: mix speech bubbles, thought clouds, banners, hearts, explosions, simple boxes
+- Color: match the emotion naturally
+Each sticker should feel unique. Avoid repetitive layouts.`,
 };
 
 /**
@@ -30,7 +36,7 @@ Requirements:
 3. Background must be pure white (#FFFFFF) for easy automatic cutting
 4. The sticker should be centered in the image with good padding around it
 5. Art style: ${styleDescription}
-${withCaption ? CAPTION_PROMPT_SEGMENT.single : ''}
+${withCaption ? `6. ${CAPTION_PROMPT_SEGMENT.single}` : ''}
 Please generate the image directly without any text explanation.`,
 
     multi: (styleDescription, count, rows, cols, withCaption) => `You are a cute cartoon character designer. Please design and generate a set of LINE-style emoji sticker pack for the character in the image.
@@ -42,7 +48,7 @@ Requirements:
 4. Background must be pure white (#FFFFFF) for easy automatic cutting
 5. Maintain clear spacing between each sticker
 6. Art style: ${styleDescription}
-${withCaption ? CAPTION_PROMPT_SEGMENT.multi : ''}
+${withCaption ? `7. ${CAPTION_PROMPT_SEGMENT.multi}` : ''}
 Please generate the image directly without any text explanation.`,
   },
   realistic: {
@@ -57,7 +63,7 @@ Requirements:
 6. The sticker should be centered in the image with good padding around it
 7. Add clean, sharp edges suitable for a die-cut sticker effect
 8. Art style: ${styleDescription}
-${withCaption ? CAPTION_PROMPT_SEGMENT.single : ''}
+${withCaption ? `9. ${CAPTION_PROMPT_SEGMENT.single}` : ''}
 Please generate the image directly without any text explanation.`,
 
     multi: (styleDescription, count, rows, cols, withCaption) => `You are a professional sticker designer. Please create a set of realistic photo-based stickers from the person/character in the image.
@@ -72,7 +78,7 @@ Requirements:
 7. Maintain clear spacing between each sticker
 8. Add clean, sharp edges suitable for a die-cut sticker effect
 9. Art style: ${styleDescription}
-${withCaption ? CAPTION_PROMPT_SEGMENT.multi : ''}
+${withCaption ? `10. ${CAPTION_PROMPT_SEGMENT.multi}` : ''}
 Please generate the image directly without any text explanation.`,
   },
 };

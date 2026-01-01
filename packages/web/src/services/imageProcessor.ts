@@ -6,6 +6,17 @@ import {
 } from '@emojicut/shared';
 
 /**
+ * 连体贴纸检测结果
+ */
+export interface MergedStickerInfo {
+  sticker: StickerSegment;
+  isMerged: boolean;
+  suggestedSplits: number; // 建议分割成几个
+  splitDirection: 'horizontal' | 'vertical' | 'none';
+  confidence: number; // 检测置信度 0-1
+}
+
+/**
  * 加载图像
  */
 export const loadImage = (dataUrl: string): Promise<HTMLImageElement> => {
@@ -332,4 +343,329 @@ export const extractStickerFromRect = (
     name: defaultName,
     isNaming: false
   };
+};
+
+/**
+ * 计算贴纸列表的平均尺寸
+ */
+const calculateAverageSize = (stickers: StickerSegment[]): { avgWidth: number; avgHeight: number; avgArea: number } => {
+  if (stickers.length === 0) return { avgWidth: 0, avgHeight: 0, avgArea: 0 };
+  
+  const totalWidth = stickers.reduce((sum, s) => sum + s.width, 0);
+  const totalHeight = stickers.reduce((sum, s) => sum + s.height, 0);
+  const totalArea = stickers.reduce((sum, s) => sum + s.width * s.height, 0);
+  
+  return {
+    avgWidth: totalWidth / stickers.length,
+    avgHeight: totalHeight / stickers.length,
+    avgArea: totalArea / stickers.length,
+  };
+};
+
+/**
+ * 智能检测连体贴纸
+ */
+export const detectMergedStickers = (stickers: StickerSegment[]): MergedStickerInfo[] => {
+  if (stickers.length < 2) {
+    return stickers.map(s => ({
+      sticker: s,
+      isMerged: false,
+      suggestedSplits: 1,
+      splitDirection: 'none' as const,
+      confidence: 0,
+    }));
+  }
+
+  const { avgWidth, avgHeight, avgArea } = calculateAverageSize(stickers);
+  
+  return stickers.map(sticker => {
+    const aspectRatio = sticker.width / sticker.height;
+    const area = sticker.width * sticker.height;
+    
+    // 判断是否可能是连体贴纸的条件：
+    // 1. 宽高比异常（太宽或太高）
+    // 2. 面积明显大于平均值
+    
+    let isMerged = false;
+    let suggestedSplits = 1;
+    let splitDirection: 'horizontal' | 'vertical' | 'none' = 'none';
+    let confidence = 0;
+    
+    // 检测水平连体（太宽）
+    if (aspectRatio > 1.8 && sticker.width > avgWidth * 1.5) {
+      isMerged = true;
+      suggestedSplits = Math.round(aspectRatio);
+      splitDirection = 'vertical';
+      confidence = Math.min(0.9, (aspectRatio - 1.5) / 2);
+    }
+    // 检测垂直连体（太高）
+    else if (aspectRatio < 0.55 && sticker.height > avgHeight * 1.5) {
+      isMerged = true;
+      suggestedSplits = Math.round(1 / aspectRatio);
+      splitDirection = 'horizontal';
+      confidence = Math.min(0.9, (1 / aspectRatio - 1.5) / 2);
+    }
+    // 检测面积异常大
+    else if (area > avgArea * 2.5) {
+      isMerged = true;
+      suggestedSplits = Math.round(Math.sqrt(area / avgArea));
+      splitDirection = aspectRatio > 1 ? 'vertical' : 'horizontal';
+      confidence = Math.min(0.8, (area / avgArea - 2) / 4);
+    }
+    
+    return {
+      sticker,
+      isMerged,
+      suggestedSplits: Math.max(2, Math.min(suggestedSplits, 4)),
+      splitDirection,
+      confidence,
+    };
+  });
+};
+
+/**
+ * 检查是否有连体贴纸
+ */
+export const hasMergedStickers = (stickers: StickerSegment[]): boolean => {
+  const results = detectMergedStickers(stickers);
+  return results.some(r => r.isMerged && r.confidence > 0.3);
+};
+
+/**
+ * 获取连体贴纸列表
+ */
+export const getMergedStickers = (stickers: StickerSegment[]): MergedStickerInfo[] => {
+  return detectMergedStickers(stickers).filter(r => r.isMerged && r.confidence > 0.3);
+};
+
+/**
+ * 分析图像中的最佳分割点（基于像素投影）
+ */
+const findBestSplitPoints = (
+  imageData: ImageData,
+  direction: 'horizontal' | 'vertical',
+  numSplits: number
+): number[] => {
+  const { width, height, data } = imageData;
+  const projection: number[] = [];
+  
+  if (direction === 'vertical') {
+    // 垂直分割：计算每列的非背景像素数
+    for (let x = 0; x < width; x++) {
+      let count = 0;
+      for (let y = 0; y < height; y++) {
+        const idx = (y * width + x) * 4;
+        const a = data[idx + 3];
+        if (a > 20) count++; // 非透明像素
+      }
+      projection.push(count);
+    }
+  } else {
+    // 水平分割：计算每行的非背景像素数
+    for (let y = 0; y < height; y++) {
+      let count = 0;
+      for (let x = 0; x < width; x++) {
+        const idx = (y * width + x) * 4;
+        const a = data[idx + 3];
+        if (a > 20) count++;
+      }
+      projection.push(count);
+    }
+  }
+  
+  // 找到投影最低的位置作为分割点
+  const segmentSize = Math.floor(projection.length / (numSplits));
+  const splitPoints: number[] = [];
+  
+  for (let i = 1; i < numSplits; i++) {
+    const centerPos = i * segmentSize;
+    const searchRange = Math.floor(segmentSize * 0.3); // 在中心点附近30%范围内搜索
+    
+    let minVal = Infinity;
+    let bestPos = centerPos;
+    
+    for (let j = Math.max(0, centerPos - searchRange); j < Math.min(projection.length, centerPos + searchRange); j++) {
+      // 计算局部最小值（使用窗口平均）
+      let windowSum = 0;
+      const windowSize = 5;
+      for (let k = Math.max(0, j - windowSize); k < Math.min(projection.length, j + windowSize); k++) {
+        windowSum += projection[k];
+      }
+      
+      if (windowSum < minVal) {
+        minVal = windowSum;
+        bestPos = j;
+      }
+    }
+    
+    splitPoints.push(bestPos);
+  }
+  
+  return splitPoints.sort((a, b) => a - b);
+};
+
+/**
+ * 智能分割单个连体贴纸
+ */
+export const splitMergedSticker = async (
+  sticker: StickerSegment,
+  direction: 'horizontal' | 'vertical',
+  numSplits: number
+): Promise<StickerSegment[]> => {
+  // 从 dataUrl 加载图像
+  const img = await loadImage(sticker.dataUrl);
+  
+  // 创建画布获取图像数据
+  const canvas = document.createElement('canvas');
+  canvas.width = img.width;
+  canvas.height = img.height;
+  const ctx = canvas.getContext('2d')!;
+  ctx.drawImage(img, 0, 0);
+  
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  
+  // 找到最佳分割点
+  const splitPoints = findBestSplitPoints(imageData, direction, numSplits);
+  
+  // 根据分割点提取各个部分
+  const segments: StickerSegment[] = [];
+  const points = [0, ...splitPoints, direction === 'vertical' ? canvas.width : canvas.height];
+  
+  for (let i = 0; i < points.length - 1; i++) {
+    const start = points[i];
+    const end = points[i + 1];
+    
+    let rect: Rect;
+    if (direction === 'vertical') {
+      rect = {
+        minX: start,
+        maxX: end,
+        minY: 0,
+        maxY: canvas.height,
+      };
+    } else {
+      rect = {
+        minX: 0,
+        maxX: canvas.width,
+        minY: start,
+        maxY: end,
+      };
+    }
+    
+    // 创建分割后的画布
+    const segWidth = rect.maxX - rect.minX;
+    const segHeight = rect.maxY - rect.minY;
+    
+    if (segWidth <= 0 || segHeight <= 0) continue;
+    
+    const segCanvas = document.createElement('canvas');
+    segCanvas.width = segWidth;
+    segCanvas.height = segHeight;
+    const segCtx = segCanvas.getContext('2d')!;
+    
+    segCtx.drawImage(
+      canvas,
+      rect.minX, rect.minY, segWidth, segHeight,
+      0, 0, segWidth, segHeight
+    );
+    
+    // 裁剪到实际内容边界
+    const trimmedSegment = trimToContent(segCanvas);
+    
+    if (trimmedSegment) {
+      segments.push({
+        id: crypto.randomUUID(),
+        dataUrl: trimmedSegment.dataUrl,
+        originalX: sticker.originalX + (direction === 'vertical' ? start : 0),
+        originalY: sticker.originalY + (direction === 'horizontal' ? start : 0),
+        width: trimmedSegment.width,
+        height: trimmedSegment.height,
+        name: `${sticker.name}_${i + 1}`,
+        isNaming: false,
+      });
+    }
+  }
+  
+  return segments;
+};
+
+/**
+ * 裁剪画布到实际内容边界
+ */
+const trimToContent = (canvas: HTMLCanvasElement): { dataUrl: string; width: number; height: number } | null => {
+  const ctx = canvas.getContext('2d')!;
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const { data, width, height } = imageData;
+  
+  let minX = width, minY = height, maxX = 0, maxY = 0;
+  let hasContent = false;
+  
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const idx = (y * width + x) * 4;
+      const a = data[idx + 3];
+      if (a > 20) {
+        hasContent = true;
+        minX = Math.min(minX, x);
+        minY = Math.min(minY, y);
+        maxX = Math.max(maxX, x);
+        maxY = Math.max(maxY, y);
+      }
+    }
+  }
+  
+  if (!hasContent || maxX <= minX || maxY <= minY) return null;
+  
+  const padding = 4;
+  const trimX = Math.max(0, minX - padding);
+  const trimY = Math.max(0, minY - padding);
+  const trimW = Math.min(width - trimX, maxX - minX + 1 + padding * 2);
+  const trimH = Math.min(height - trimY, maxY - minY + 1 + padding * 2);
+  
+  const trimCanvas = document.createElement('canvas');
+  trimCanvas.width = trimW;
+  trimCanvas.height = trimH;
+  const trimCtx = trimCanvas.getContext('2d')!;
+  
+  trimCtx.drawImage(canvas, trimX, trimY, trimW, trimH, 0, 0, trimW, trimH);
+  
+  return {
+    dataUrl: trimCanvas.toDataURL('image/png'),
+    width: trimW,
+    height: trimH,
+  };
+};
+
+/**
+ * 一键智能分割所有连体贴纸
+ */
+export const smartSplitAllMerged = async (
+  stickers: StickerSegment[],
+  onProgress?: (progress: number, message: string) => void
+): Promise<StickerSegment[]> => {
+  const mergedInfos = detectMergedStickers(stickers);
+  const result: StickerSegment[] = [];
+  let processed = 0;
+  
+  for (const info of mergedInfos) {
+    if (info.isMerged && info.confidence > 0.3 && info.splitDirection !== 'none') {
+      onProgress?.(
+        Math.round((processed / mergedInfos.length) * 100),
+        `正在分割贴纸 ${processed + 1}/${mergedInfos.length}...`
+      );
+      
+      const splitStickers = await splitMergedSticker(
+        info.sticker,
+        info.splitDirection,
+        info.suggestedSplits
+      );
+      result.push(...splitStickers);
+    } else {
+      result.push(info.sticker);
+    }
+    processed++;
+  }
+  
+  onProgress?.(100, '分割完成！');
+  return result;
 };

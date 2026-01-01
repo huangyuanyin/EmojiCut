@@ -8,7 +8,16 @@ import {
   API_ENDPOINTS,
   FILE_CONFIG,
 } from '@emojicut/shared';
-import { loadImage, processStickerSheet } from './imageProcessor';
+import { 
+  loadImage, 
+  processStickerSheet, 
+  hasMergedStickers, 
+  getMergedStickers, 
+  smartSplitAllMerged,
+  splitMergedSticker,
+  detectMergedStickers,
+  MergedStickerInfo,
+} from './imageProcessor';
 import JSZip from 'jszip';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
@@ -198,4 +207,13 @@ export const readFileAsBase64 = (file: File): Promise<string> => {
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
+};
+
+export {
+  hasMergedStickers,
+  getMergedStickers,
+  smartSplitAllMerged,
+  splitMergedSticker,
+  detectMergedStickers,
+  type MergedStickerInfo,
 };
