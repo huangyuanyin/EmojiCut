@@ -39,7 +39,24 @@ export interface StickerSegment {
 /**
  * 画面风格类型
  */
-export type StickerStyle = 'line_cute' | 'chibi_expressive' | 'kawaii_pastel' | 'dynamic_action' | 'custom';
+export type StickerStyle = 'line_cute' | 'chibi_expressive' | 'kawaii_pastel' | 'dynamic_action' | 'realistic' | 'custom';
+
+/**
+ * 风格类别 - 决定 AI 提示词模板
+ */
+export type StyleCategory = 'cartoon' | 'realistic';
+
+/**
+ * 风格配置项
+ */
+export interface StyleConfigItem {
+  /** 显示名称 */
+  name: string;
+  /** AI 提示词描述 */
+  description: string;
+  /** 风格类别 */
+  category: StyleCategory;
+}
 
 /**
  * 图片纵横比类型

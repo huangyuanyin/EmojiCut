@@ -9,7 +9,8 @@ import {
   MAX_FILENAME_LENGTH,
   API_TIMEOUT,
   DEFAULT_SAFETY_SETTINGS,
-  STYLE_DESCRIPTIONS,
+  STYLE_CONFIG,
+  getStyleCategory,
 } from './ai.constants';
 import {
   GeminiContent,
@@ -163,7 +164,8 @@ export class AiService {
       this.logger.log(`Generating sticker sheet with style: ${style}, aspectRatio: ${aspectRatio || 'default'}, count: ${count}`);
 
       const styleDescription = this._getStyleDescription(style, customStyle);
-      const prompt = STICKER_GENERATION_PROMPT(styleDescription, count);
+      const category = getStyleCategory(style);
+      const prompt = STICKER_GENERATION_PROMPT(styleDescription, category, count);
 
       const base64Data = referenceImageBase64.replace(/^data:image\/\w+;base64,/, '');
 
@@ -259,6 +261,6 @@ export class AiService {
     if (style === 'custom' && customStyle) {
       return customStyle;
     }
-    return STYLE_DESCRIPTIONS[style] || STYLE_DESCRIPTIONS.line_cute;
+    return STYLE_CONFIG[style]?.description || STYLE_CONFIG.line_cute.description;
   }
 }

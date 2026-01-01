@@ -1,24 +1,47 @@
-/**
- * 贴纸风格配置
- */
-export const STICKER_STYLES = {
-  line_cute: 'LINE可爱贴纸风格',
-  chibi_expressive: 'Q版表情包风格',
-  kawaii_pastel: '粉彩少女风格',
-  dynamic_action: '动感活力风格',
-  custom: '自定义风格',
-} as const;
+import { StickerStyle, StyleConfigItem, StyleCategory } from './types';
 
 /**
- * 风格描述（AI 提示词）
+ * 统一的风格配置
  */
-export const STYLE_DESCRIPTIONS = {
-  line_cute: 'Cute LINE sticker style with simple lines, bright colors, and adorable expressions',
-  chibi_expressive: 'Chibi Q-version emoji style with exaggerated expressions and dynamic actions',
-  kawaii_pastel: 'Kawaii pastel style with soft macaron colors and sweet, gentle aesthetics',
-  dynamic_action: 'Dynamic action style with energetic poses and vibrant movements',
-  custom: '',
-} as const;
+export const STYLE_CONFIG: Record<StickerStyle, StyleConfigItem> = {
+  line_cute: {
+    name: 'LINE可爱贴纸风格',
+    description: 'Cute LINE sticker style with simple lines, bright colors, and adorable expressions',
+    category: 'cartoon',
+  },
+  chibi_expressive: {
+    name: 'Q版表情包风格',
+    description: 'Chibi Q-version emoji style with exaggerated expressions and dynamic actions',
+    category: 'cartoon',
+  },
+  kawaii_pastel: {
+    name: '粉彩少女风格',
+    description: 'Kawaii pastel style with soft macaron colors and sweet, gentle aesthetics',
+    category: 'cartoon',
+  },
+  dynamic_action: {
+    name: '动感活力风格',
+    description: 'Dynamic action style with energetic poses and vibrant movements',
+    category: 'cartoon',
+  },
+  realistic: {
+    name: '真实贴纸风格',
+    description: 'Realistic photo-based sticker style - preserve the original photo appearance with natural proportions, real textures, and authentic details. Do NOT cartoonize or stylize',
+    category: 'realistic',
+  },
+  custom: {
+    name: '自定义风格',
+    description: '',
+    category: 'cartoon', // 自定义默认为卡通类别，可通过提示词覆盖
+  },
+};
+
+/**
+ * 获取风格类别
+ */
+export const getStyleCategory = (style: StickerStyle): StyleCategory => {
+  return STYLE_CONFIG[style]?.category ?? 'cartoon';
+};
 
 /**
  * API端点

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { StickerStyle, STICKER_STYLES } from '@emojicut/shared';
+import { StickerStyle, STYLE_CONFIG } from '@emojicut/shared';
 import { Sparkles, Heart, Star, CloudUpload, Power, Scissors, Wand2 } from 'lucide-react';
 import {
   generateSticker,
@@ -152,13 +152,13 @@ const CutePrinter2D: React.FC<CutePrinter2DProps> = ({ onGenerateComplete }) => 
       {referenceImage && !isGenerating && (
         <div className={styles.styleSection}>
           <div className={styles.styleChips}>
-            {(Object.keys(STICKER_STYLES) as StickerStyle[]).map((style) => (
+            {(Object.keys(STYLE_CONFIG) as StickerStyle[]).map((style) => (
               <button
                 key={style}
                 className={`style-chip ${selectedStyle === style ? 'selected' : ''}`}
                 onClick={() => setSelectedStyle(style)}
               >
-                {STICKER_STYLES[style]}
+                {STYLE_CONFIG[style].name}
               </button>
             ))}
           </div>
