@@ -25,7 +25,7 @@ export const STYLE_CONFIG: Record<StickerStyle, StyleConfigItem> = {
     category: 'cartoon',
   },
   realistic: {
-    name: '真实贴纸风格',
+    name: '真实人物风格',
     description: 'Realistic photo-based sticker style - preserve the original photo appearance with natural proportions, real textures, and authentic details. Do NOT cartoonize or stylize',
     category: 'realistic',
   },
@@ -57,13 +57,13 @@ export const API_ENDPOINTS = {
 export const IMAGE_PROCESSING = {
   // 背景识别
   BACKGROUND: {
-    RGB_THRESHOLD: 240,
+    RGB_THRESHOLD: 240, // 降低阈值，让更多浅色区域被识别为背景
     ALPHA_THRESHOLD: 20,
   },
 
   // 区域合并
   MERGE: {
-    DISTANCE: 15,
+    DISTANCE: 5,
   },
 
   // 最小区域尺寸

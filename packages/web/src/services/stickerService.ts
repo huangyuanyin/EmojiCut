@@ -103,16 +103,16 @@ export const runAiNaming = async (
   onProgress?: (status: ProcessingStatus) => void,
 ): Promise<void> => {
   const batchSize = 3;
-  const totalBatches = Math.ceil(segments.length / batchSize);
+  const total = segments.length;
 
   for (let i = 0; i < segments.length; i += batchSize) {
     const batch = segments.slice(i, i + batchSize);
-    const currentBatch = Math.floor(i / batchSize) + 1;
+    const currentEnd = Math.min(i + batchSize, total);
 
     onProgress?.({
       stage: 'ai_naming',
-      progress: Math.round((currentBatch / totalBatches) * 100),
-      message: `AI命名中... (${currentBatch}/${totalBatches})`,
+      progress: Math.round((currentEnd / total) * 100),
+      message: `AI命名中... (${currentEnd}/${total})`,
     });
 
     // 标记为命名中

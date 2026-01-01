@@ -1,4 +1,14 @@
 /**
+ * 矩形区域定义（用于手动裁剪）
+ */
+export interface Rect {
+  minX: number;
+  maxX: number;
+  minY: number;
+  maxY: number;
+}
+
+/**
  * 应用模式
  */
 export type AppMode = 'generate' | 'cut';

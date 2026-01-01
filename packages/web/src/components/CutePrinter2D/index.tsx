@@ -18,6 +18,7 @@ const CutePrinter2D: React.FC<CutePrinter2DProps> = ({ onGenerateComplete }) => 
   const [selectedStyle, setSelectedStyle] = useState<StickerStyle>('custom');
   const [customStyle, setCustomStyle] = useState('');
   const [stickerCount, setStickerCount] = useState(16);
+  const [countInputValue, setCountInputValue] = useState('16');
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -136,15 +137,17 @@ const CutePrinter2D: React.FC<CutePrinter2DProps> = ({ onGenerateComplete }) => 
         ) : (
           <div className={styles.imagePreview}>
             <img src={referenceImage} alt="Reference" className={styles.previewImage} />
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleReset();
-              }}
-              className={styles.resetBtn}
-            >
-              ✕
-            </button>
+            {!isGenerating && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleReset();
+                }}
+                className={styles.resetBtn}
+              >
+                ✕
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -180,7 +183,11 @@ const CutePrinter2D: React.FC<CutePrinter2DProps> = ({ onGenerateComplete }) => 
             <div className={styles.countInput}>
               <button
                 className={styles.countBtn}
-                onClick={() => setStickerCount((v) => Math.max(1, v - 2))}
+                onClick={() => {
+                  const newVal = Math.max(1, stickerCount - 2);
+                  setStickerCount(newVal);
+                  setCountInputValue(String(newVal));
+                }}
               >
                 -
               </button>
@@ -188,16 +195,30 @@ const CutePrinter2D: React.FC<CutePrinter2DProps> = ({ onGenerateComplete }) => 
                 type="number"
                 min={1}
                 max={16}
-                value={stickerCount}
-                onChange={(e) => {
-                  const val = parseInt(e.target.value) || 1;
-                  setStickerCount(Math.min(16, Math.max(1, val)));
+                value={countInputValue}
+                onChange={(e) => setCountInputValue(e.target.value)}
+                onBlur={() => {
+                  const val = parseInt(countInputValue);
+                  if (isNaN(val) || val < 1) {
+                    setStickerCount(1);
+                    setCountInputValue('1');
+                  } else if (val > 16) {
+                    setStickerCount(16);
+                    setCountInputValue('16');
+                  } else {
+                    setStickerCount(val);
+                    setCountInputValue(String(val));
+                  }
                 }}
                 className={styles.countValue}
               />
               <button
                 className={styles.countBtn}
-                onClick={() => setStickerCount((v) => Math.min(16, v + 2))}
+                onClick={() => {
+                  const newVal = Math.min(16, stickerCount + 2);
+                  setStickerCount(newVal);
+                  setCountInputValue(String(newVal));
+                }}
               >
                 +
               </button>

@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
-import { AppMode, StickerSegment, ProcessingStatus } from '@emojicut/shared';
-import { Download, Loader2, RefreshCw, Sparkles, Heart } from 'lucide-react';
-import CutePrinter2D from './components/CutePrinter2D/index';
-import StickerStack from './components/StickerStack/index';
+import { AppMode, StickerSegment, ProcessingStatus, Rect } from '@emojicut/shared';
+import { Download, Loader2, Sparkles, Heart, PlusCircle, ArrowLeft } from 'lucide-react';
+import CutePrinter2D from './components/CutePrinter2D';
+import StickerStack from './components/StickerStack';
+import ManualCropModal from './components/ManualCropModal';
+import CuteButton from './components/CuteButton';
 import { processFile, runAiNaming, downloadAllStickers } from './services/stickerService';
+import { loadImage, extractStickerFromRect } from './services/imageProcessor';
 import styles from './App.module.less';
 
 const App: React.FC = () => {
@@ -15,9 +18,17 @@ const App: React.FC = () => {
   });
   const [segments, setSegments] = useState<StickerSegment[]>([]);
   const [isZipping, setIsZipping] = useState(false);
+  const [originalImage, setOriginalImage] = useState<string | null>(null);
+  const [originalImageEl, setOriginalImageEl] = useState<HTMLImageElement | null>(null);
+  const [isManualCropping, setIsManualCropping] = useState(false);
 
   const handleGenerateComplete = async (imageData: string) => {
     setAppMode('cut');
+
+    // 保存原始图像用于手动裁剪
+    setOriginalImage(imageData);
+    const img = await loadImage(imageData);
+    setOriginalImageEl(img);
 
     // 开始图像处理
     const result = await processFile(imageData, setStatus);
@@ -29,6 +40,23 @@ const App: React.FC = () => {
     }
   };
 
+  const handleManualCrop = async (rect: Rect) => {
+    if (!originalImageEl) return;
+
+    const newSegment = extractStickerFromRect(
+      originalImageEl,
+      rect,
+      `sticker_${segments.length + 1}`
+    );
+
+    if (newSegment) {
+      setSegments(prev => [...prev, newSegment]);
+      setIsManualCropping(false);
+      // 为新添加的贴纸进行AI命名
+      await runAiNaming([newSegment], setSegments, setStatus);
+    }
+  };
+
   const handleReset = () => {
     setAppMode('generate');
     setStatus({
@@ -37,6 +65,8 @@ const App: React.FC = () => {
       message: '等待开始...',
     });
     setSegments([]);
+    setOriginalImage(null);
+    setOriginalImageEl(null);
   };
 
   const handleDownloadAll = async () => {
@@ -53,10 +83,39 @@ const App: React.FC = () => {
 
       {appMode === 'cut' && (
         <>
+          {segments.length > 0 && (
+            <div className={styles.floatingBtnGroup}>
+              <CuteButton
+                onClick={handleDownloadAll}
+                icon={Download}
+                color="green"
+                loading={isZipping}
+              >
+                保存全部
+              </CuteButton>
+              <CuteButton
+                onClick={() => setIsManualCropping(true)}
+                icon={PlusCircle}
+                color="blue"
+                disabled={!originalImage}
+              >
+                手动添加
+              </CuteButton>
+              <CuteButton
+                onClick={handleReset}
+                icon={ArrowLeft}
+                color="purple"
+              >
+                重新生成
+              </CuteButton>
+            </div>
+          )}
+
+          {/* 机器面板 */}
           <div className="cute-machine cute-machine-static">
             <div className={styles.header}>
               <div className={styles.headerDot}></div>
-              <div className={styles.headerTitle}>✨ EmojiCut - AI贴纸生成 ✨</div>
+              <div className={styles.headerTitle}>✨ NANO BANANA PRO ✨</div>
               <div className={styles.headerDot}></div>
             </div>
 
@@ -66,8 +125,8 @@ const App: React.FC = () => {
                   <Loader2 size={32} className={styles.spinIcon} />
                   <div className={styles.processingText}>{status.message}</div>
                   <div className={styles.progressBar}>
-                    <div 
-                      className={styles.progressFill} 
+                    <div
+                      className={styles.progressFill}
                       style={{ width: `${status.progress}%` }}
                     ></div>
                   </div>
@@ -82,20 +141,23 @@ const App: React.FC = () => {
                     <Sparkles size={16} />
                     <span>共 {segments.length} 个贴纸</span>
                   </div>
-                  
-                  <div className={styles.actionButtons}>
-                    <button onClick={handleReset} className={styles.resetBtn}>
-                      <RefreshCw size={16} />
-                      <span>再来一次</span>
-                    </button>
-                    <button 
-                      onClick={handleDownloadAll} 
-                      className={styles.downloadBtn}
-                      disabled={isZipping}
+                  <div className={styles.completeActions}>
+                    <CuteButton
+                      onClick={handleDownloadAll}
+                      icon={Download}
+                      color="green"
+                      loading={isZipping}
+                      disabled={segments.length === 0}
                     >
-                      {isZipping ? <Loader2 size={16} className={styles.spinIcon} /> : <Download size={16} />}
-                      <span>全部保存</span>
-                    </button>
+                      保存全部
+                    </CuteButton>
+                    <CuteButton
+                      onClick={handleReset}
+                      icon={ArrowLeft}
+                      color="purple"
+                    >
+                      重新生成
+                    </CuteButton>
                   </div>
                 </div>
               )}
@@ -107,6 +169,15 @@ const App: React.FC = () => {
           <div className="sticker-output-area">
             <StickerStack stickers={segments} visible={segments.length > 0} />
           </div>
+
+          {/* 手动裁剪模态框 */}
+          {isManualCropping && originalImage && (
+            <ManualCropModal
+              imageUrl={originalImage}
+              onClose={() => setIsManualCropping(false)}
+              onConfirm={handleManualCrop}
+            />
+          )}
         </>
       )}
     </div>

@@ -2,6 +2,7 @@ import {
   StickerSegment,
   ProcessingStatus,
   IMAGE_PROCESSING,
+  Rect,
 } from '@emojicut/shared';
 
 /**
@@ -20,9 +21,10 @@ export const loadImage = (dataUrl: string): Promise<HTMLImageElement> => {
  * 判断是否为背景像素
  */
 const isBackground = (r: number, g: number, b: number, a: number): boolean => {
-  if (a < 20) return true; // 透明
+  if (a < IMAGE_PROCESSING.BACKGROUND.ALPHA_THRESHOLD) return true; // 透明
   // 高亮度被认为是背景（白色纸张）
-  return r > 240 && g > 240 && b > 240;
+  const threshold = IMAGE_PROCESSING.BACKGROUND.RGB_THRESHOLD;
+  return r > threshold && g > threshold && b > threshold;
 };
 
 /**
@@ -232,22 +234,23 @@ const shouldMerge = (
   const dy = Math.max(0, Math.max(r1.minY, r2.minY) - Math.min(r1.maxY, r2.maxY));
   const distance = Math.sqrt(dx * dx + dy * dy);
 
-  return distance < 15; // 距离阈值
+  return distance < IMAGE_PROCESSING.MERGE.DISTANCE;
 };
 
 /**
  * 从矩形区域提取贴纸，去除背景并添加白色描边
  */
-const extractStickerFromRect = (
-  source: HTMLCanvasElement,
-  rect: { minX: number; minY: number; maxX: number; maxY: number },
+export const extractStickerFromRect = (
+  source: HTMLCanvasElement | HTMLImageElement,
+  rect: Rect,
   defaultName: string = 'sticker',
 ): StickerSegment | null => {
   const padding = 2;
   const strokeWidth = 6; // 白色描边宽度
 
-  const width = source.width;
-  const height = source.height;
+  // 获取源图像尺寸（HTMLImageElement 使用 naturalWidth/naturalHeight）
+  const width = source instanceof HTMLImageElement ? source.naturalWidth : source.width;
+  const height = source instanceof HTMLImageElement ? source.naturalHeight : source.height;
 
   // 1. 计算裁剪尺寸
   const finalX = Math.max(0, rect.minX - padding);
