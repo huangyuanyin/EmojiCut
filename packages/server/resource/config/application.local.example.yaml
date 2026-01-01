@@ -1,0 +1,29 @@
+# EmojiCut Server 本地配置示例
+# 复制此文件为 application.local.yaml 并填入你的配置
+
+# Google Gemini AI 配置
+gemini:
+  # API 密钥（必填）
+  # 从 https://makersuite.google.com/app/apikey 获取
+  apiKey: 'YOUR_GEMINI_API_KEY_HERE'
+  # 模型名称
+  # 可选值: gemini-2.0-flash-exp, gemini-3-pro-image-preview 等
+  model: 'gemini-3-pro-image-preview'
+  # 自定义 API 端点（选填，默认使用官方 API）
+  # 如果你使用代理或自建服务，可以在这里配置
+  baseUrl: ''
+
+# HTTP 代理配置（选填）
+# 如果你需要通过代理访问 Gemini API
+proxy:
+  # HTTP 代理地址
+  http: 'http://127.0.0.1:7890'
+  # HTTPS 代理地址
+  https: 'http://127.0.0.1:7890'
+
+# 服务器配置
+server:
+  # 服务端口
+  port: 3001
+  # 运行环境: development | production | test
+  nodeEnv: 'development'

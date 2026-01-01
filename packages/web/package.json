@@ -1,0 +1,31 @@
+{
+  "name": "@emojicut/web",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "EmojiCut frontend with React and Rsbuild",
+  "scripts": {
+    "dev": "rsbuild dev",
+    "build": "rsbuild build",
+    "preview": "rsbuild preview",
+    "clean": "rm -rf dist",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint src --ext .ts,.tsx"
+  },
+  "dependencies": {
+    "@emojicut/shared": "workspace:*",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "lucide-react": "^0.469.0",
+    "jszip": "^3.10.1"
+  },
+  "devDependencies": {
+    "@rsbuild/core": "^1.1.15",
+    "@rsbuild/plugin-react": "^1.1.1",
+    "@rsbuild/plugin-less": "^1.1.1",
+    "@rsbuild/plugin-type-check": "^1.1.1",
+    "@types/react": "^18.2.48",
+    "@types/react-dom": "^18.2.18",
+    "typescript": "^5.8.0"
+  }
+}

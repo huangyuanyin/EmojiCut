@@ -1,0 +1,37 @@
+{
+  "name": "emojicut-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "EmojiCut - AI驱动的贴纸生成和自动切割工具 (Monorepo)",
+  "scripts": {
+    "dev": "pnpm --parallel -r dev",
+    "dev:web": "pnpm --filter @emojicut/web dev",
+    "dev:server": "pnpm --filter @emojicut/server dev",
+    "build": "pnpm -r build",
+    "build:web": "pnpm --filter @emojicut/web build",
+    "build:server": "pnpm --filter @emojicut/server build",
+    "clean": "pnpm -r clean && rm -rf node_modules",
+    "lint": "pnpm -r lint",
+    "type-check": "pnpm -r type-check"
+  },
+  "keywords": [
+    "monorepo",
+    "emojicut",
+    "sticker",
+    "ai",
+    "image-processing"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.5",
+    "typescript": "^5.8.0"
+  },
+  "dependencies": {
+    "https-proxy-agent": "^7.0.6"
+  }
+}
