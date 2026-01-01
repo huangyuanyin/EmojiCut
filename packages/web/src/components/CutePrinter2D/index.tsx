@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { StickerStyle, STYLE_CONFIG } from '@emojicut/shared';
-import { Sparkles, Heart, Star, CloudUpload, Power, Scissors, Wand2 } from 'lucide-react';
+import { Sparkles, Heart, Star, CloudUpload, Power, Scissors, Wand2, ImageOff } from 'lucide-react';
 import {
   generateSticker,
   validateFileSize,
@@ -19,6 +19,7 @@ const CutePrinter2D: React.FC<CutePrinter2DProps> = ({ onGenerateComplete }) => 
   const [customStyle, setCustomStyle] = useState('');
   const [stickerCount, setStickerCount] = useState(16);
   const [countInputValue, setCountInputValue] = useState('16');
+  const [withCaption, setWithCaption] = useState(true); // 默认带文字
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -84,6 +85,7 @@ const CutePrinter2D: React.FC<CutePrinter2DProps> = ({ onGenerateComplete }) => 
         style: selectedStyle,
         customStyle: selectedStyle === 'custom' ? customStyle : undefined,
         count: stickerCount,
+        withCaption,
       });
 
       clearInterval(progressInterval);
@@ -223,6 +225,26 @@ const CutePrinter2D: React.FC<CutePrinter2DProps> = ({ onGenerateComplete }) => 
                 +
               </button>
             </div>
+          </div>
+
+          <div className={styles.captionSection}>
+            <label
+              className={`${styles.captionToggle} ${!withCaption ? styles.captionToggleActive : ''}`}
+              onClick={() => setWithCaption(!withCaption)}
+            >
+              <div className={styles.captionIcon}>
+                <ImageOff size={16} />
+              </div>
+              <span className={styles.captionText}>生成纯贴纸</span>
+              <div className={`${styles.toggleSwitch} ${!withCaption ? styles.toggleSwitchOn : ''}`}>
+                <div className={styles.toggleKnob}></div>
+              </div>
+            </label>
+            {!withCaption && (
+              <div className={styles.captionHint}>
+                🎨 只生成表情贴纸，不带文字
+              </div>
+            )}
           </div>
         </div>
       )}

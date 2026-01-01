@@ -159,13 +159,14 @@ export class AiService {
     customStyle?: string,
     aspectRatio?: string,
     count: number = 1,
+    withCaption: boolean = false,
   ): Promise<string> {
     try {
-      this.logger.log(`Generating sticker sheet with style: ${style}, aspectRatio: ${aspectRatio || 'default'}, count: ${count}`);
+      this.logger.log(`Generating sticker sheet with style: ${style}, aspectRatio: ${aspectRatio || 'default'}, count: ${count}, withCaption: ${withCaption}`);
 
       const styleDescription = this._getStyleDescription(style, customStyle);
       const category = getStyleCategory(style);
-      const prompt = STICKER_GENERATION_PROMPT(styleDescription, category, count);
+      const prompt = STICKER_GENERATION_PROMPT(styleDescription, category, count, withCaption);
 
       const base64Data = referenceImageBase64.replace(/^data:image\/\w+;base64,/, '');
 
@@ -239,15 +240,12 @@ export class AiService {
       const data = await this._callGeminiAPI(contents);
       const text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
 
-      // 清理文件名，确保符合规范
+      // 清理文件名，保留中文、英文、数字和下划线
       const cleanedName = text
-        .toLowerCase()
-        .replace(/[^a-z0-9_]/g, '_')
-        .replace(/_+/g, '_')
-        .replace(/^_|_$/g, '')
+        .replace(/[^\u4e00-\u9fa5a-zA-Z0-9_]/g, '')
         .substring(0, MAX_FILENAME_LENGTH); // 限制长度
 
-      return cleanedName || 'sticker';
+      return cleanedName || '贴纸';
     } catch (error) {
       this.logger.error(`Failed to generate sticker name: ${error.message}`);
       throw error;

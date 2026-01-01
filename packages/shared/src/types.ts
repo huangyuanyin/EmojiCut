@@ -90,6 +90,7 @@ export interface GenerateStickerRequest {
   customStyle?: string;
   aspectRatio?: AspectRatio; // 图片纵横比
   count?: number; // 生成数量 (1-16)
+  withCaption?: boolean; // 是否带文字
 }
 
 /**

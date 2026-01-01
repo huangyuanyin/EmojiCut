@@ -20,7 +20,7 @@ export class StickerService {
     request: GenerateStickerRequest,
   ): Promise<GenerateStickerResponse> {
     try {
-      this.logger.log(`Generating sticker with style: ${request.style}`);
+      this.logger.log(`Generating sticker with style: ${request.style}, withCaption: ${request.withCaption || false}`);
 
       const imageData = await this.aiService.generateStickerSheet(
         request.referenceImage,
@@ -28,6 +28,7 @@ export class StickerService {
         request.customStyle,
         request.aspectRatio,
         request.count || 1,
+        request.withCaption || false,
       );
 
       return {
